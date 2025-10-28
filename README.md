@@ -164,7 +164,7 @@ This interactively sets up SSH keys on a TwinCAT target via the ADS protocol.
 **Note:** These instructions are for Windows systems only.
 
 > **⚠️ Security Warning**: Opening SSH port 22 exposes your system to potential security risks. Only enable SSH access on trusted networks (e.g., isolated industrial networks). Consider the following:
-> - **Use only SSH keys instead of passwords** (this tool uses only SSH keys)
+> - **Configure server to accept SSH keys instead of passwords** See instructions below 
 > - **Keep OpenSSH Server updated** to patch security vulnerabilities
 > - **Limit access** to specific IP addresses if possible using firewall rules
 > - **Do not expose port 22 to the public internet** without additional security measures (VPN, port forwarding restrictions, etc.)
@@ -174,37 +174,44 @@ To install OpenSSH Server on the target IPC using PowerShell:
 1. **Run PowerShell as an Administrator**
 
 2. **Check if OpenSSH is available:**
-   ```powershell
-   Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+    ```powershell
+    Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
 
-   Name  : OpenSSH.Server~~~~0.0.1.0
-   State : NotPresent
-   ```
+    Name  : OpenSSH.Server~~~~0.0.1.0
+    State : NotPresent
+    ```
 
 3. **Install the OpenSSH Server:**
-   ```powershell
-   # Install the OpenSSH Server
-   Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-   ```
+    ```powershell
+    # Install the OpenSSH Server
+    Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+    ```
 
 4. **Start and configure OpenSSH Server** (open an elevated PowerShell prompt):
-   ```powershell
-   # Start the sshd service
-   Start-Service sshd
+    ```powershell
+    # IMPORTANT: Disable password authentication for security   
+    # Uncomments and sets 'PasswordAuthentication no'
+    (Get-Content "C:\ProgramData\ssh\sshd_config") -replace '^#?PasswordAuthentication.*', 'PasswordAuthentication no' | Set-Content "C:\ProgramData\ssh\sshd_config"
 
-   # Set service to start automatically
-   # SSH server will start automatically after a reboot.
-   Set-Service -Name sshd -StartupType 'Automatic'
+    # Start the sshd service
+    Start-Service sshd
 
-   # Create firewall rule if not created by setup
-   # NOTE: This will add rule for all network profiles (Private, Public, Domain)
-   if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
-       Write-Output "Firewall Rule 'OpenSSH-Server-In-TCP' does not exist, creating it..."
-       New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -Profile Any
-   } else {
-       Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
-   }
-   ```
+    # Verify current PasswordAuthentication setting
+    Select-String -Path "C:\ProgramData\ssh\sshd_config" -Pattern "PasswordAuthentication"
+
+    # Set service to start automatically
+    # SSH server will start automatically after a reboot.
+    Set-Service -Name sshd -StartupType 'Automatic'
+
+    # Create firewall rule if not created by setup
+    # NOTE: This will add rule for all network profiles (Private, Public, Domain)
+    if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
+        Write-Output "Firewall Rule 'OpenSSH-Server-In-TCP' does not exist, creating it..."
+        New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -Profile Any
+    } else {
+        Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
+    }
+    ```
 
 ## License
 
