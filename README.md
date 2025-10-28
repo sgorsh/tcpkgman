@@ -38,6 +38,7 @@ python -m tcpkgman --help
 ## Usage
 
 ### Step 1: Add a Remote Target
+> Administrator privileges are required by TcPkg to add and delete remote target
 
 Before running any commands, you must first add a remote target configuration. This is a one-time setup for each target.
 
@@ -53,6 +54,8 @@ tcpkgman --remote-add myplc
 tcpkgman --remote-add
 ```
 
+![Remote add command](remote-add.png)
+
 During setup, you'll be prompted for:
 - **Remote name**: A friendly name for this target (e.g., `myplc`)
 - **Host address or IP**: The target's IP address or hostname (defaults to remote name)
@@ -62,9 +65,6 @@ During setup, you'll be prompted for:
 - **SSH key**: Path to your SSH private key (auto-detected or generated)
 
 The tool will automatically test the SSH connection and offer to set up SSH via ADS if needed.
-
-**Requirements:**
-- Administrator privileges (modifies system-level TcPkg configuration)
 
 #### List or Remove Remotes
 
